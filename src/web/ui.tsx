@@ -187,16 +187,19 @@ export function ActionRow({ a, showMission = true, onEdit }: { a: Row; showMissi
     <div className="group flex items-start gap-2.5 border-b border-line px-1 py-1.5 last:border-0">
       <ActionCheck a={a} />
       <button className="min-w-0 flex-1 text-left" onClick={() => onEdit?.(a)}>
-        <span className={a.status === 'fait' ? 'text-ink-3 line-through' : ''}>{a.description}</span>
-        <span className="meta ml-2 whitespace-nowrap">
-          {a.owner === 'client' && <span className="badge badge-outline mr-1.5">{a.owner_name || 'Client'}</span>}
-          {a.status === 'en_attente' && 'en attente · '}
-          {a.status === 'en_cours' && 'en cours · '}
-          {a.meeting_title && <span title={`Issue de la réunion « ${a.meeting_title} »`}>↳ {a.meeting_title}</span>}
-        </span>
+        {/* Le texte prend toute la largeur ; les détails passent dessous, sur une ligne qui peut se replier. */}
+        <span className={`block break-words ${a.status === 'fait' ? 'text-ink-3 line-through' : ''}`}>{a.description}</span>
+        {(showMission || a.owner === 'client' || a.status === 'en_attente' || a.status === 'en_cours' || a.meeting_title) && (
+          <span className="meta mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+            {showMission && <Chip m={a} link={false} />}
+            {a.owner === 'client' && <span className="badge badge-outline">{a.owner_name || 'Client'}</span>}
+            {a.status === 'en_attente' && <span>en attente</span>}
+            {a.status === 'en_cours' && <span>en cours</span>}
+            {a.meeting_title && <span className="min-w-0 max-w-full truncate" title={`Issue de la réunion « ${a.meeting_title} »`}>↳ {a.meeting_title}</span>}
+          </span>
+        )}
       </button>
-      {showMission && <Chip m={a} />}
-      {a.due_date && <span className={`num w-20 flex-none text-right text-xs ${late ? 'font-semibold text-late' : 'text-ink-3'}`} title={dMed(a.due_date)}>{dRel(a.due_date)}</span>}
+      {a.due_date && <span className={`num flex-none whitespace-nowrap pt-0.5 text-right text-xs ${late ? 'font-semibold text-late' : 'text-ink-3'}`} title={dMed(a.due_date)}>{dRel(a.due_date)}</span>}
     </div>
   )
 }
