@@ -2,7 +2,7 @@ import { getRequestListener } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { Hono } from 'hono'
-import { basicAuth } from 'hono/basic-auth'
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
@@ -47,9 +47,47 @@ backupNow().then((f) => console.log('Sauvegarde de démarrage :', f)).catch((e) 
 // ── Application web
 const app = new Hono()
 app.get('/healthz', (c) => c.json({ ok: true }))
-if (process.env.APP_PASSWORD) {
-  app.use('*', basicAuth({ username: process.env.APP_USER || 'moi', password: process.env.APP_PASSWORD, realm: 'Suivi freelance' }))
+// ── Connexion : page de login dans l'interface, puis cookie de session (90 jours). Sans APP_PASSWORD, accès libre.
+const APP_PASSWORD = process.env.APP_PASSWORD || ''
+const COOKIE = 'lefil_session'
+const sessionValue = () => crypto.createHmac('sha256', APP_PASSWORD).update('lefil-session-v1').digest('hex')
+const safeEqual = (a: string, b: string) =>
+  crypto.timingSafeEqual(crypto.createHash('sha256').update(a).digest(), crypto.createHash('sha256').update(b).digest())
+const isAuthed = (c: any) => {
+  if (!APP_PASSWORD) return true
+  const v = getCookie(c, COOKIE)
+  return !!v && safeEqual(v, sessionValue())
 }
+// Anti force brute : 8 essais ratés → 5 minutes de blocage par IP.
+const fails = new Map<string, { n: number; until: number }>()
+const clientIp = (c: any) => (c.req.header('cf-connecting-ip') || c.req.header('x-real-ip') || c.req.header('x-forwarded-for')?.split(',')[0] || 'x').trim()
+app.get('/api/me', (c) => c.json({ authRequired: !!APP_PASSWORD, authed: isAuthed(c) }))
+app.post('/api/login', async (c) => {
+  const ip = clientIp(c)
+  const f = fails.get(ip)
+  if (f && f.until > Date.now()) return c.json({ error: 'Trop de tentatives, réessaie dans quelques minutes.' }, 429)
+  const body = await c.req.json().catch(() => ({}))
+  const password = typeof body?.password === 'string' ? body.password : ''
+  if (APP_PASSWORD && !safeEqual(password, APP_PASSWORD)) {
+    const n = (f?.n ?? 0) + 1
+    fails.set(ip, { n, until: n >= 8 ? Date.now() + 5 * 60_000 : 0 })
+    return c.json({ error: 'Mot de passe incorrect.' }, 401)
+  }
+  fails.delete(ip)
+  if (APP_PASSWORD) {
+    const secure = c.req.header('x-forwarded-proto') === 'https' || new URL(c.req.url).protocol === 'https:'
+    setCookie(c, COOKIE, sessionValue(), { path: '/', httpOnly: true, sameSite: 'Lax', secure, maxAge: 60 * 60 * 24 * 90 })
+  }
+  return c.json({ ok: true })
+})
+app.post('/api/logout', (c) => {
+  deleteCookie(c, COOKIE, { path: '/' })
+  return c.json({ ok: true })
+})
+app.use('/api/*', async (c, next) => {
+  if (isAuthed(c)) return next()
+  return c.json({ error: 'Non connecté.' }, 401)
+})
 app.route('/api', createApi(core, { mcpToken: MCP_TOKEN, backupNow }))
 app.all('/api/*', (c) => c.json({ error: 'Route inconnue.' }, 404))
 app.use('*', serveStatic({ root: path.relative(process.cwd(), WEB_DIR) || '.' }))

@@ -11,7 +11,7 @@ docker compose up -d --build
 
 L'interface est sur `http://<serveur>:3000`. Les données sont dans `./data` (base `suivi.db`), les sauvegardes quotidiennes dans `./backups`.
 
-- **Accès** : par défaut le port n'écoute que sur `127.0.0.1`. Pour y accéder depuis ton réseau Tailscale, mets `BIND_ADDRESS` à l'IP Tailscale du serveur (ou `0.0.0.0`). Hors Tailscale / Cloudflare Access, définis `APP_PASSWORD`.
+- **Accès** : par défaut le port n'écoute que sur `127.0.0.1`. Pour y accéder depuis ton réseau Tailscale, mets `BIND_ADDRESS` à l'IP Tailscale du serveur (ou `0.0.0.0`). Hors Tailscale / Cloudflare Access, définis `APP_PASSWORD` : l’interface affiche alors une page de connexion (session de 90 jours, déconnexion dans Réglages).
 - **Sauvegarde hors serveur** : pointe `BACKUP_PATH` vers un disque ou un partage externe, ou synchronise `./backups` (rsync, rclone). 30 sauvegardes sont conservées.
 - **Mise à jour** : `git pull && docker compose up -d --build`.
 

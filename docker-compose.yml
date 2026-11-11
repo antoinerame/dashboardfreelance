@@ -9,7 +9,6 @@ services:
       # Mets BIND_ADDRESS=0.0.0.0 (ou l'IP Tailscale du serveur) dans .env pour l'exposer au réseau.
       - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-3000}:3000"
     environment:
-      APP_USER: ${APP_USER:-moi}
       APP_PASSWORD: ${APP_PASSWORD:-}
       MCP_TOKEN: ${MCP_TOKEN:-}
       BACKUP_KEEP: ${BACKUP_KEEP:-30}

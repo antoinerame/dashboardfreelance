@@ -11,7 +11,10 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   })
   const data = await res.json().catch(() => null)
-  if (!res.ok) throw new Error(data?.error || `Erreur ${res.status}`)
+  if (!res.ok) {
+    if (res.status === 401 && path !== '/login') window.dispatchEvent(new Event('lefil:logout'))
+    throw new Error(data?.error || `Erreur ${res.status}`)
+  }
   return data as T
 }
 

@@ -119,6 +119,10 @@ export function SettingsPage() {
               </div>
             </div>
           </section>
+          <section className="card">
+            <div className="card-head"><span className="title-block">Session</span></div>
+            <div className="card-body"><button className="btn" onClick={async () => { await api('/logout', { method: 'POST' }).catch(() => {}); window.location.href = '/' }}>Se déconnecter</button></div>
+          </section>
         </div>
       </div>
     </>
