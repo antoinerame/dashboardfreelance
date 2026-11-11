@@ -1,0 +1,20 @@
+services:
+  suivi:
+    build: .
+    image: suivi-freelance:latest
+    container_name: suivi-freelance
+    restart: unless-stopped
+    ports:
+      # Par défaut, accessible seulement depuis la machine elle-même.
+      # Mets BIND_ADDRESS=0.0.0.0 (ou l'IP Tailscale du serveur) dans .env pour l'exposer au réseau.
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-3000}:3000"
+    environment:
+      APP_USER: ${APP_USER:-moi}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      MCP_TOKEN: ${MCP_TOKEN:-}
+      BACKUP_KEEP: ${BACKUP_KEEP:-30}
+      BACKUP_HOUR: ${BACKUP_HOUR:-3}
+    volumes:
+      - ./data:/data
+      # Pointe ce dossier vers un disque ou un partage hors du serveur pour une vraie sauvegarde externe.
+      - ${BACKUP_PATH:-./backups}:/backups
