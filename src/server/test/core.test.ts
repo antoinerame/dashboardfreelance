@@ -53,7 +53,7 @@ test('mission, temps, facture', () => {
   const inv = core.createInvoice({ mission_id: m.id, from: addDays(t, -5), to: t })
   assert.equal(inv.amount, 700)
   assert.equal(inv.entries.length, 2)
-  assert.match(inv.number, /^\d{4}-001$/)
+  assert.match(inv.number, /^F-\d{4}-001$/)
   assert.equal(core.getMission(m.id).unbilled_minutes, 0)
   assert.throws(() => core.deleteTime(inv.entries[0].id))
   core.updateInvoice(inv.id, { paid_date: t })
@@ -61,6 +61,15 @@ test('mission, temps, facture', () => {
   assert.equal(core.revenue().paid, 700)
   core.deleteInvoice(inv.id)
   assert.equal(core.getMission(m.id).unbilled_minutes, 420)
+
+  // Facture faite dans Qonto, enregistrée déjà payée ; échéance 30 jours fin de mois ; une ligne par mois.
+  const q = core.createInvoice({ mission_id: m.id, number: 'F-2026-001', from: addDays(t, -5), to: t, issued_date: '2026-03-18', paid_date: '2026-04-20' })
+  assert.equal(q.due_date, '2026-04-30')
+  assert.equal(q.sent_date, '2026-04-20')
+  assert.equal(core.getTime(q.entries[0].id).status, 'paye')
+  assert.equal(q.lines.length, 1)
+  assert.equal(q.lines[0].minutes, 420)
+  assert.equal(core.nextInvoiceNumber('2026-05-02'), 'F-2026-002')
 })
 
 test('chrono', () => {

@@ -33,6 +33,7 @@ Exemples : « j'ai passé 2 h sur le chatbot TOBAM », « démarre le chrono sur
 | `add_meeting`, `update_meeting` | `list_open_actions`, `get_meeting` |
 | `add_action`, `update_action`, `add_log` | `get_timesheet`, `export_timesheet`, `get_unbilled_hours` |
 | `create_mission`, `add_chantier`, `update_mission_status` | `search`, `get_recent_activity` |
+| `record_invoice`, `update_invoice`, `update_settings` | `prepare_invoice`, `list_invoices`, `get_settings` |
 
 ## L'interface
 
@@ -40,7 +41,7 @@ Exemples : « j'ai passé 2 h sur le chatbot TOBAM », « démarre le chrono sur
 - **Palette** (`Ctrl K`) : recherche dans les réunions, actions, journal et heures, plus toutes les commandes. `?` affiche les raccourcis.
 - **Page mission** : bloc « Reprendre le fil » (dernière réunion et décisions, journal, actions ouvertes), budget, chantiers.
 - **Réunions** : dans les notes, `- [ ]` ou `>>` en début de ligne devient une action, `!!` une décision (bouton « Extraire »).
-- **Facturation** : période → récapitulatif → facture imprimable en PDF ; les heures passent à « facturé » puis « payé ».
+- **Facturation** : période → champs à saisir dans Qonto (une ligne par mois, période d’exécution, échéance), à copier un par un → « Enregistrer la facture Qonto » avec son numéro ; les heures passent à « facturé » puis « payé ».
 
 ## Développement
 

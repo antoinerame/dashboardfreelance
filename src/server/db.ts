@@ -111,6 +111,9 @@ export function openDb(file?: string): Database.Database {
   db.pragma('journal_mode = WAL')
   db.pragma('foreign_keys = ON')
   db.exec(SCHEMA)
+  // Migrations douces (colonnes ajoutées après coup).
+  const cols = (t: string) => (db.prepare(`PRAGMA table_info(${t})`).all() as { name: string }[]).map((c) => c.name)
+  if (!cols('invoices').includes('due_date')) db.exec('ALTER TABLE invoices ADD COLUMN due_date TEXT')
   return db
 }
 

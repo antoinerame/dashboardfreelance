@@ -32,6 +32,29 @@ function fmtMeeting(r: Row, full: boolean): string {
   return out.join('\n')
 }
 
+
+const fr = (d?: string | null) => (d ? d.split('-').reverse().join('/') : '—')
+const qty = (n: number) => n.toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+function qontoSheet(p: Row, st: Row): string {
+  const out = [
+    `Période d’exécution : du ${fr(p.exec_from)} au ${fr(p.exec_to)}`,
+    `Date d’émission : ${fr(p.issued_date)}`,
+    `Date d’échéance : ${fr(p.due_date)}`,
+  ]
+  p.lines.forEach((l: Row, i: number) => {
+    out.push(
+      `\n**Article ${i + 1}**`,
+      `- Titre : ${l.label}`,
+      `- Détails (optionnel) : ${l.details}`,
+      `- Quantité : ${qty(l.quantity)} · Unité : ${l.unit}${l.quantity > 1 ? 's' : ''} (${fmtDuration(l.minutes)})`,
+      `- Prix unitaire HT : ${qty(l.rate)} € · TVA : 0 % · Total HT : ${fmtEuro(l.amount)}`,
+      `- Nature de l’exonération : ${st.vat_exemption}`,
+    )
+  })
+  out.push(`\n**Total HT : ${fmtEuro(p.amount)}** (TVA 0 €, TTC = HT)`)
+  return out.join('\n')
+}
+
 export function createMcpServer(core: Core): McpServer {
   const server = new McpServer(
     { name: 'suivi-freelance', version: '1.0.0' },
@@ -41,7 +64,9 @@ export function createMcpServer(core: Core): McpServer {
         'Une mission appartient à un client et se découpe en chantiers. Désigne une mission par un nom approximatif (« tobam ») ; ' +
         "en cas de doute, appelle list_missions. Pour reprendre le fil d'une mission, commence par get_mission_status. " +
         'Les durées acceptent « 1h30 », « 45m », « 2.5 » (heures) ou « 0.5j » (jours). Les dates sont au format AAAA-MM-JJ, en heure de Paris ; ' +
-        "sans date, c'est aujourd'hui. N'invente jamais d'heures ni de décisions : écris seulement ce que l'utilisateur a dit.",
+        "sans date, c'est aujourd'hui. N'invente jamais d'heures ni de décisions : écris seulement ce que l'utilisateur a dit. " +
+        "Facturation : les factures sont faites dans Qonto. prepare_invoice donne les champs à saisir dans Qonto ; une fois la facture faite, " +
+        "record_invoice l'enregistre ici (numéro Qonto) et passe les heures en « facturé » (ou « payé »). update_invoice la marque payée ensuite.",
     },
   )
 
@@ -449,6 +474,129 @@ export function createMcpServer(core: Core): McpServer {
       const m = core.resolveMission(a.mission)
       const c = core.createChantier({ mission_id: m.id, name: a.nom })
       return `Chantier « ${c.name} » ajouté à ${title(m)}.`
+    },
+  )
+
+  // ───────────── facturation (factures faites dans Qonto) ─────────────
+  const invLine = (i: Row) =>
+    `- [#${i.id}] ${i.number} · ${i.client_name} – ${i.mission_name} · du ${fr(i.period_start)} au ${fr(i.period_end)} · ${fmtDuration(i.minutes)} · ${fmtEuro(i.amount)} HT · émise ${fr(i.issued_date)}, échéance ${fr(i.due_date)} · ` +
+    (i.paid_date ? `payée le ${fr(i.paid_date)}` : i.sent_date ? `envoyée le ${fr(i.sent_date)}, NON PAYÉE` : 'brouillon')
+
+  tool(
+    'list_invoices',
+    'Liste les factures enregistrées (numéro, période, heures, montant, dates d’émission, d’échéance, d’envoi et de paiement), avec le chiffre d’affaires de l’année.',
+    { annee: z.string().optional().describe('Année du chiffre d’affaires (défaut : année en cours)') },
+    true,
+    (a) => {
+      const inv = core.listInvoices()
+      const r = core.revenue(a.annee)
+      return (inv.length ? inv.map(invLine).join('\n') : 'Aucune facture enregistrée.') +
+        `\n\nCA ${r.year} : encaissé ${fmtEuro(r.paid)}, facturé en attente ${fmtEuro(r.pending)}, travaillé non facturé ${fmtEuro(r.unbilled)}.`
+    },
+  )
+
+  tool(
+    'prepare_invoice',
+    'Prépare une facture à saisir dans Qonto, sans rien enregistrer : heures facturables pas encore facturées de la période, une ligne par mois (titre, détails, quantité, unité, prix unitaire, TVA, exonération), période d’exécution, échéance et prochain numéro.',
+    {
+      mission: missionArg,
+      du: z.string().optional().describe('Début de période AAAA-MM-JJ (défaut : toutes les heures non facturées)'),
+      au: z.string().optional().describe('Fin de période AAAA-MM-JJ (défaut : aujourd’hui)'),
+      date_emission: z.string().optional().describe('Date d’émission prévue (défaut : aujourd’hui), sert au calcul de l’échéance'),
+    },
+    true,
+    (a) => {
+      const m = core.resolveMission(a.mission)
+      const p = core.previewInvoice({ mission_id: m.id, from: a.du || '2000-01-01', to: a.au || today(), issued_date: a.date_emission })
+      if (!p.entries.length) return `Aucune heure facturable non facturée pour ${title(m)} sur cette période.`
+      return `# Facture à saisir dans Qonto — ${title(m)}\nNuméro suggéré : ${p.next_number} (Qonto numérote lui-même : garde le sien)\n\n` + qontoSheet(p, p.settings) +
+        `\n\n${p.entries.length} entrées. Une fois la facture créée dans Qonto, appelle record_invoice avec son numéro et la même période.`
+    },
+  )
+
+  tool(
+    'record_invoice',
+    'Enregistre une facture faite dans Qonto : rattache les heures facturables non facturées de la période et les passe en « facturé » (ou « payé » si payee_le est donné). Pour des heures déjà payées, renseigne payee_le.',
+    {
+      mission: missionArg,
+      numero: z.string().describe('Numéro de la facture Qonto (ex. F-2026-001)'),
+      du: z.string().describe('Début de la période d’exécution AAAA-MM-JJ'),
+      au: z.string().describe('Fin de la période d’exécution AAAA-MM-JJ'),
+      date_emission: z.string().describe('Date d’émission AAAA-MM-JJ'),
+      date_echeance: z.string().optional().describe('Date d’échéance (défaut : calculée selon les réglages)'),
+      montant_ht: z.number().optional().describe('Montant HT réellement facturé, s’il diffère du calcul heures × taux'),
+      envoyee_le: z.string().optional(),
+      payee_le: z.string().optional().describe('Date de paiement, si déjà payée'),
+      notes: z.string().optional(),
+    },
+    false,
+    (a) => {
+      const m = core.resolveMission(a.mission)
+      const inv = core.createInvoice({
+        mission_id: m.id, number: a.numero, from: a.du, to: a.au, issued_date: a.date_emission, due_date: a.date_echeance,
+        amount: a.montant_ht, sent_date: a.envoyee_le, paid_date: a.payee_le, notes: a.notes,
+      })
+      const calc = inv.lines.reduce((x: number, l: Row) => x + l.amount, 0)
+      return `Facture enregistrée :\n${invLine(inv)}\n${inv.entries.length} entrées passées en « ${inv.paid_date ? 'payé' : 'facturé'} ».` +
+        (Math.abs(calc - inv.amount) > 0.01 ? `\n⚠ Le montant saisi (${fmtEuro(inv.amount)}) diffère du calcul heures × taux (${fmtEuro(calc)}) : vérifie la période.` : '')
+    },
+  )
+
+  tool(
+    'update_invoice',
+    'Modifie une facture enregistrée (id ou numéro) : la marquer envoyée ou payée, corriger son numéro, ses dates ou son montant. supprimer = true la supprime et ses heures redeviennent « à facturer ».',
+    {
+      facture: z.string().describe('Id (#3) ou numéro (F-2026-001) de la facture'),
+      numero: z.string().optional(),
+      date_emission: z.string().optional(),
+      date_echeance: z.string().optional(),
+      envoyee_le: z.string().optional().describe('Date d’envoi ; chaîne vide pour effacer'),
+      payee_le: z.string().optional().describe('Date de paiement ; chaîne vide pour repasser en non payée'),
+      montant_ht: z.number().optional(),
+      notes: z.string().optional(),
+      supprimer: z.boolean().optional(),
+    },
+    false,
+    (a) => {
+      const key = a.facture.trim().replace(/^#/, '')
+      const found = core.listInvoices().find((i) => i.number === a.facture.trim() || String(i.id) === key)
+      if (!found) throw new Error(`Facture « ${a.facture} » introuvable (voir list_invoices).`)
+      if (a.supprimer) {
+        core.deleteInvoice(found.id)
+        return `Facture ${found.number} supprimée : ses heures redeviennent « à facturer ».`
+      }
+      const data: Row = { number: a.numero, issued_date: a.date_emission, due_date: a.date_echeance, sent_date: a.envoyee_le, paid_date: a.payee_le, amount: a.montant_ht, notes: a.notes }
+      if (a.payee_le && !found.sent_date && a.envoyee_le === undefined) data.sent_date = a.payee_le
+      const inv = core.updateInvoice(found.id, data)
+      return `Facture mise à jour :\n${invLine(inv)}`
+    },
+  )
+
+  // ───────────── réglages ─────────────
+  const SETTING_HELP: Record<string, string> = {
+    owner_name: 'Nom / raison sociale', owner_address: 'Adresse', owner_siret: 'SIRET', owner_email: 'Courriel', owner_iban: 'IBAN',
+    micro_ceiling: 'Plafond de CA micro-entrepreneur (€)', vat_mention: 'Mention de TVA', payment_terms: 'Conditions de paiement (texte)',
+    invoice_prefix: 'Préfixe des numéros de facture', invoice_line_label: 'Titre des lignes de facture ({mois}, {mission}, {client})',
+    due_days: 'Délai de paiement en jours', due_end_of_month: '1 = échéance reportée en fin de mois', vat_exemption: 'Nature de l’exonération de TVA (Qonto)',
+  }
+  tool(
+    'get_settings',
+    'Lit les réglages : identité et coordonnées de facturation, plafond micro-entrepreneur, mention de TVA, délai de paiement, préfixe des factures, titre des lignes de facture.',
+    {},
+    true,
+    () => Object.entries(core.getSettings()).map(([k, v]) => `- ${k} (${SETTING_HELP[k] || k}) : ${v || '—'}`).join('\n'),
+  )
+  tool(
+    'update_settings',
+    'Modifie un ou plusieurs réglages (clés données par get_settings). Seules les clés fournies changent.',
+    { reglages: z.record(z.string(), z.union([z.string(), z.number()])).describe('Ex. { "due_days": "30", "invoice_line_label": "Conseil IA — {mois}" }') },
+    false,
+    (a) => {
+      const known = Object.keys(core.getSettings())
+      const bad = Object.keys(a.reglages).filter((k) => !known.includes(k))
+      if (bad.length) throw new Error(`Réglage(s) inconnu(s) : ${bad.join(', ')}. Réglages possibles : ${known.join(', ')}.`)
+      const st = core.setSettings(a.reglages)
+      return 'Réglages enregistrés :\n' + Object.keys(a.reglages).map((k) => `- ${k} : ${st[k] || '—'}`).join('\n')
     },
   )
 

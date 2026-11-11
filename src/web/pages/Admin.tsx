@@ -58,6 +58,11 @@ const SETTING_FIELDS: [string, string, string?][] = [
   ['owner_name', 'Nom / raison sociale (sur les factures)'], ['owner_siret', 'SIRET'], ['owner_email', 'Courriel'], ['owner_iban', 'IBAN'],
   ['micro_ceiling', 'Plafond de CA micro-entrepreneur (€)', 'À vérifier chaque année selon ton activité. 0 pour masquer la jauge.'],
   ['payment_terms', 'Conditions de paiement'], ['vat_mention', 'Mention de TVA'],
+  ['vat_exemption', 'Nature de l’exonération de TVA (Qonto)'],
+  ['invoice_prefix', 'Préfixe des numéros de facture', 'Ex. « F- » pour F-2026-001.'],
+  ['invoice_line_label', 'Titre des lignes de facture', 'Une ligne par mois. {mois} → « Mars 2026 » ; aussi {mission} et {client}.'],
+  ['due_days', 'Délai de paiement (jours)'],
+  ['due_end_of_month', 'Échéance en fin de mois', '1 = oui (30 jours fin de mois : émise le 18/03 → échéance le 30/04), 0 = non.'],
 ]
 
 export function SettingsPage() {

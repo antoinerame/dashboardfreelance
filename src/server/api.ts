@@ -102,7 +102,7 @@ export function createApi(core: Core, info: { mcpToken: string; backupNow: () =>
   api.get('/invoices', (c) => c.json({ invoices: core.listInvoices(), revenue: core.revenue(q(c).year) }))
   api.get('/invoices/preview', (c) => {
     const p = q(c)
-    return c.json(core.previewInvoice({ mission_id: Number(p.mission_id), from: p.from, to: p.to }))
+    return c.json(core.previewInvoice({ mission_id: Number(p.mission_id), from: p.from, to: p.to, issued_date: p.issued_date || undefined }))
   })
   api.post('/invoices', async (c) => c.json(core.createInvoice(await body(c))))
   api.get('/invoices/:id', (c) => c.json(core.getInvoice(id(c))))

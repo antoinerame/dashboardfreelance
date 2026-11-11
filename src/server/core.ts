@@ -19,7 +19,7 @@ const COLS: Record<string, string[]> = {
   meetings: ['mission_id', 'date', 'time', 'title', 'participants', 'agenda', 'notes', 'decisions', 'summary'],
   actions: ['mission_id', 'description', 'owner', 'owner_name', 'due_date', 'status', 'meeting_id'],
   logs: ['mission_id', 'ts', 'text'],
-  invoices: ['number', 'amount', 'issued_date', 'sent_date', 'paid_date', 'notes'],
+  invoices: ['number', 'amount', 'issued_date', 'due_date', 'sent_date', 'paid_date', 'notes'],
 }
 
 export const SETTINGS_DEFAULTS: Record<string, string> = {
@@ -31,6 +31,11 @@ export const SETTINGS_DEFAULTS: Record<string, string> = {
   micro_ceiling: '77700',
   vat_mention: 'TVA non applicable, art. 293 B du CGI',
   payment_terms: 'Paiement à 30 jours',
+  invoice_prefix: 'F-',
+  invoice_line_label: 'Prestations de conseil et développement IA — {mois}',
+  due_days: '30',
+  due_end_of_month: '1',
+  vat_exemption: 'Franchise en base de TVA (art. 293 B du CGI)',
 }
 
 export const STATUS_LABELS: Record<string, string> = {
@@ -603,48 +608,82 @@ export function createCore(db: Database.Database) {
     FROM invoices i JOIN missions m ON m.id=i.mission_id JOIN clients c ON c.id=m.client_id`
   const listInvoices = () => all(`${INVOICE_SQL} ORDER BY i.issued_date DESC, i.id DESC`)
 
+  const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+  const monthLabel = (ym: string) => { const m = MONTHS[Number(ym.slice(5, 7)) - 1]; return m[0].toUpperCase() + m.slice(1) + ' ' + ym.slice(0, 4) }
+  const round2 = (n: number) => Math.round(n * 100) / 100
+  /** Lignes de facture : une par mois (comme sur les factures Qonto), avec le détail par chantier. */
   function invoiceLines(entries: Row[], mission: Row): Row[] {
-    const groups = new Map<string, number>()
-    for (const e of entries) groups.set(e.chantier_name || mission.name, (groups.get(e.chantier_name || mission.name) || 0) + e.minutes)
-    return [...groups.entries()].map(([label, minutes]) => ({
-      label, minutes,
-      quantity: mission.rate_type === 'jour' ? minutes / 60 / (mission.hours_per_day || 7) : minutes / 60,
-      unit: mission.rate_type === 'jour' ? 'jour' : 'heure',
-      rate: mission.rate || 0,
-      amount: amountFor(minutes, mission),
-    }))
+    const template = getSettings().invoice_line_label || '{mission} — {mois}'
+    const months = new Map<string, Row[]>()
+    for (const e of entries) months.set(e.date.slice(0, 7), [...(months.get(e.date.slice(0, 7)) || []), e])
+    return [...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([ym, es]) => {
+      const minutes = es.reduce((x, e) => x + e.minutes, 0)
+      const byChantier = new Map<string, number>()
+      for (const e of es) byChantier.set(e.chantier_name || 'Divers', (byChantier.get(e.chantier_name || 'Divers') || 0) + e.minutes)
+      return {
+        month: ym,
+        label: template.replace('{mois}', monthLabel(ym)).replace('{mission}', mission.name).replace('{client}', mission.client_name || ''),
+        details: [...byChantier.entries()].sort((a, b) => b[1] - a[1]).map(([n, mn]) => `${n} : ${fmtDuration(mn)}`).join(' · '),
+        minutes,
+        quantity: round2(mission.rate_type === 'jour' ? minutes / 60 / (mission.hours_per_day || 7) : minutes / 60),
+        unit: mission.rate_type === 'jour' ? 'jour' : 'heure',
+        rate: mission.rate || 0,
+        amount: round2(amountFor(minutes, mission)),
+      }
+    })
   }
-  /** Récapitulatif de ce qui serait facturé sur une période (sans rien modifier). */
-  function previewInvoice(f: { mission_id: number; from: string; to: string }): Row {
+  /** Échéance selon les réglages : N jours, puis fin de mois si demandé (30 jours fin de mois : 18/03 → 30/04). */
+  function dueDateFor(issued: string): string {
+    const st = getSettings()
+    let d = addDays(issued, Number(st.due_days) || 0)
+    if (st.due_end_of_month === '1') d = monthRange(d)[1]
+    return d
+  }
+  /** Récapitulatif de ce qui serait facturé sur une période (sans rien modifier), avec les champs à saisir dans Qonto. */
+  function previewInvoice(f: { mission_id: number; from: string; to: string; issued_date?: string }): Row {
     const mission = getMission(f.mission_id)
     checkDate(f.from, 'Début de période', true)
     checkDate(f.to, 'Fin de période', true)
     const entries = listTime({ ...f, status: 'a_facturer' }).filter((e) => e.billable).reverse()
     const minutes = entries.reduce((s, e) => s + e.minutes, 0)
     const lines = invoiceLines(entries, mission)
-    const amount = Math.round(lines.reduce((s, l) => s + l.amount, 0) * 100) / 100
-    return { mission, from: f.from, to: f.to, entries, minutes, lines, amount }
+    const amount = round2(lines.reduce((s, l) => s + l.amount, 0))
+    const issued = f.issued_date || today()
+    const exec_from = entries.length ? entries[0].date : f.from
+    const exec_to = entries.length ? entries[entries.length - 1].date : f.to
+    return {
+      mission, client: need('clients', mission.client_id, 'Client'), from: f.from, to: f.to, entries, minutes, lines, amount,
+      exec_from, exec_to, issued_date: issued, due_date: dueDateFor(issued), next_number: nextInvoiceNumber(issued), settings: getSettings(),
+    }
   }
+  /** Numéro suivant : préfixe des réglages + année + compteur (F-2026-001, F-2026-002…). */
   function nextInvoiceNumber(issued: string): string {
     const year = issued.slice(0, 4)
-    const nums = all('SELECT number FROM invoices WHERE number LIKE ?', `${year}-%`)
-      .map((r) => parseInt(String(r.number).slice(5)))
-      .filter((n) => !isNaN(n))
-    return `${year}-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, '0')}`
+    const nums = all('SELECT number FROM invoices').map((r) => String(r.number))
+      .filter((n) => n.includes(year)).map((n) => parseInt(n.match(/(\d+)\s*$/)?.[1] ?? ''))
+      .filter((n) => !isNaN(n) && n < 10000)
+    return `${getSettings().invoice_prefix ?? ''}${year}-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, '0')}`
   }
   function createInvoice(data: Row): Row {
-    const pv = previewInvoice({ mission_id: data.mission_id, from: data.from, to: data.to })
+    const pv = previewInvoice({ mission_id: data.mission_id, from: data.from, to: data.to, issued_date: data.issued_date })
     const issued = data.issued_date || today()
     checkDate(issued, 'Date d’émission', true)
+    for (const k of ['due_date', 'sent_date', 'paid_date']) checkDate(data[k], 'Date')
     const amount = data.amount !== undefined && data.amount !== null && data.amount !== '' ? Number(data.amount) : pv.amount
     if (!pv.entries.length && !(amount > 0)) throw new AppError('Aucune heure à facturer sur cette période.')
     const tx = db.transaction(() => {
       const id = insert(
         'invoices',
-        { number: data.number?.trim() || nextInvoiceNumber(issued), amount, issued_date: issued, notes: data.notes },
-        { mission_id: pv.mission.id, period_start: data.from, period_end: data.to, created_at: nowIso() },
+        {
+          number: data.number?.trim() || nextInvoiceNumber(issued), amount, issued_date: issued, notes: data.notes,
+          due_date: data.due_date || dueDateFor(issued),
+          // Une facture payée a forcément été envoyée.
+          sent_date: data.sent_date || data.paid_date || null, paid_date: data.paid_date || null,
+        },
+        // Période d'exécution : celle saisie, sauf bornes « tout le non-facturé » remplacées par les dates réelles des heures.
+        { mission_id: pv.mission.id, period_start: data.from > '2000-01-01' ? data.from : pv.exec_from, period_end: data.to < today() ? data.to : pv.exec_to, created_at: nowIso() },
       )
-      const stmt = db.prepare("UPDATE time_entries SET invoice_id=?, status='facture' WHERE id=?")
+      const stmt = db.prepare(`UPDATE time_entries SET invoice_id=?, status='${data.paid_date ? 'paye' : 'facture'}' WHERE id=?`)
       for (const e of pv.entries) stmt.run(id, e.id)
       return id
     })
@@ -657,14 +696,14 @@ export function createCore(db: Database.Database) {
     const entries = all(`${TIME_SQL} WHERE t.invoice_id=? ORDER BY t.date, t.id`, inv.id)
     return {
       ...inv, mission, client: need('clients', mission.client_id, 'Client'), entries,
-      lines: invoiceLines(entries, mission), settings: getSettings(),
+      lines: invoiceLines(entries, mission), settings: getSettings(), due_date: inv.due_date || dueDateFor(inv.issued_date),
     }
   }
   function updateInvoice(id: number, data: Row): Row {
     for (const k of ['issued_date', 'sent_date', 'paid_date']) checkDate(data[k], 'Date')
     const tx = db.transaction(() => {
       update('invoices', id, data)
-      for (const k of ['sent_date', 'paid_date']) {
+      for (const k of ['due_date', 'sent_date', 'paid_date']) {
         if (data[k] === null || data[k] === '') db.prepare(`UPDATE invoices SET ${k}=NULL WHERE id=?`).run(id)
       }
       const inv = need('invoices', id, 'Facture')
@@ -859,7 +898,7 @@ export function createCore(db: Database.Database) {
     listMeetings, getMeeting, createMeeting, updateMeeting, deleteMeeting: (id: number) => remove('meetings', id),
     listActions, getAction, createAction, updateAction, deleteAction: (id: number) => remove('actions', id),
     listLogs, addLog, deleteLog: (id: number) => remove('logs', id),
-    listInvoices, previewInvoice, createInvoice, getInvoice, updateInvoice, deleteInvoice, revenue,
+    listInvoices, previewInvoice, createInvoice, nextInvoiceNumber, getInvoice, updateInvoice, deleteInvoice, revenue,
     dashboard, recentActivity, search, exportAll,
   }
 }
