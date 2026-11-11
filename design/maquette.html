@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Le Fil (suivi de missions)</title>
+<style>
+/* ===== Tokens : identiques à src/web/styles/theme.css ===== */
+:root{color-scheme:light;
+--bg:#f5f2ea;--surface:#fcfaf5;--sunken:#ece8dc;--overlay:rgb(29 27 22 / .42);
+--line:#dcd6c6;--line-strong:#b8b19e;--ink:#1d1b16;--ink-2:#565146;--ink-3:#777162;
+--accent:#2a3f9e;--accent-hover:#213281;--accent-ink:#fff;--accent-soft:#e2e6f6;
+--late:#b3261e;--late-soft:#f7e0db;--warn:#8a5a00;--warn-soft:#f6e8c6;--ok:#2c6a3d;--ok-soft:#dcecd9;--neutral:#666152;--neutral-soft:#e8e4d8;
+--m1:#3552b8;--m2:#0f766e;--m3:#a8640a;--m4:#b8482a;--m5:#7d3c98;--m6:#5c7316;--m7:#b0326b;--m8:#4d6478;
+--shadow-pop:0 1px 0 rgb(29 27 22 / .04),0 18px 48px -12px rgb(29 27 22 / .28);
+--font-sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+--font-serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+--font-mono:"Cascadia Mono","Cascadia Code",ui-monospace,"SF Mono",Consolas,"Liberation Mono",monospace;
+--r-sm:3px;--r-md:5px;--r-lg:8px;--r-xl:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+--bg:#161512;--surface:#1e1c18;--sunken:#100f0d;--overlay:rgb(0 0 0 / .6);
+--line:#322f29;--line-strong:#4c483e;--ink:#ece7da;--ink-2:#b5af9f;--ink-3:#8f8979;
+--accent:#a9b8ff;--accent-hover:#c3ceff;--accent-ink:#14183a;--accent-soft:#252a49;
+--late:#ff8a7a;--late-soft:#3d1f1b;--warn:#e9b949;--warn-soft:#382c11;--ok:#86c995;--ok-soft:#1b3021;--neutral:#a39d8d;--neutral-soft:#2a2823;
+--m1:#8fa6f5;--m2:#5cc4b8;--m3:#e0a84e;--m4:#f0906f;--m5:#c796e0;--m6:#a9c45a;--m7:#ee8db6;--m8:#9db4c8;
+--shadow-pop:0 0 0 1px rgb(255 255 255 / .04),0 24px 60px -12px rgb(0 0 0 / .7)}}
+:root[data-theme="dark"]{color-scheme:dark;
+--bg:#161512;--surface:#1e1c18;--sunken:#100f0d;--overlay:rgb(0 0 0 / .6);
+--line:#322f29;--line-strong:#4c483e;--ink:#ece7da;--ink-2:#b5af9f;--ink-3:#8f8979;
+--accent:#a9b8ff;--accent-hover:#c3ceff;--accent-ink:#14183a;--accent-soft:#252a49;
+--late:#ff8a7a;--late-soft:#3d1f1b;--warn:#e9b949;--warn-soft:#382c11;--ok:#86c995;--ok-soft:#1b3021;--neutral:#a39d8d;--neutral-soft:#2a2823;
+--m1:#8fa6f5;--m2:#5cc4b8;--m3:#e0a84e;--m4:#f0906f;--m5:#c796e0;--m6:#a9c45a;--m7:#ee8db6;--m8:#9db4c8;
+--shadow-pop:0 0 0 1px rgb(255 255 255 / .04),0 24px 60px -12px rgb(0 0 0 / .7)}
+
+/* ===== Base + composants (mêmes classes que theme.css) ===== */
+*{box-sizing:border-box}
+html{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:16px}
+body{margin:0;font-size:14px;line-height:1.45}
+a{color:inherit;text-decoration:none}
+a:hover{text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:3px}
+h1,h2,h3,p,ul,ol{margin:0;padding:0}ul,ol{list-style:none}
+svg.i{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:var(--r-sm)}
+.sr{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.title-page{font-family:var(--font-serif);font-size:26px;line-height:1.15;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.title-block{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.meta{font-size:12px;color:var(--ink-3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 10px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer}
+.btn:hover{background:var(--sunken);text-decoration:none}
+.btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn-primary:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn-sm{height:24px;padding:0 7px;font-size:12px}
+.input{width:100%;height:30px;padding:0 9px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+.input-line{width:100%;height:32px;padding:0 2px;border:0;border-bottom:1px dashed var(--line-strong);background:transparent;color:var(--ink);font:inherit}
+.input-line::placeholder{color:var(--ink-3)}
+.input-line:focus{outline:none;border-bottom:1px solid var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.card-body{padding:12px 14px}
+.badge{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:var(--r-sm);background:var(--neutral-soft);color:var(--neutral);font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+.badge-late{background:var(--late-soft);color:var(--late)}
+.badge-warn{background:var(--warn-soft);color:var(--warn)}
+.badge-ok{background:var(--ok-soft);color:var(--ok)}
+.badge-accent{background:var(--accent-soft);color:var(--accent)}
+.badge-outline{background:transparent;border:1px solid var(--line-strong);color:var(--ink-2)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--mc,var(--neutral));flex:none}
+.chip-mission{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 7px 0 6px;border-radius:var(--r-sm);font-size:12px;font-weight:500;background:color-mix(in srgb,var(--mc,var(--neutral)) 14%,transparent);white-space:nowrap}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:var(--r-sm);background:var(--surface);color:var(--ink-2);font-family:var(--font-mono);font-size:10px;line-height:1}
+.meter{position:relative;height:8px;border-radius:2px;background:var(--sunken);overflow:hidden}
+.meter>span{display:block;height:100%;background:var(--mc,var(--ink))}
+.table-dense{width:100%;border-collapse:collapse;font-size:13px}
+.table-dense th{padding:6px 10px;text-align:left;white-space:nowrap;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--line-strong)}
+.table-dense td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:baseline}
+.table-dense tbody tr:hover{background:color-mix(in srgb,var(--sunken) 60%,transparent)}
+.table-dense .num{text-align:right}
+.table-dense tfoot td{border-bottom:0;border-top:1px solid var(--line-strong);font-weight:600}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--late);animation:pulse 1.6s ease-in-out infinite;flex:none}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+
+/* ===== Shell ===== */
+.app{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;border-right:1px solid var(--line);padding:12px 10px;gap:14px;overflow:auto}
+.brand{display:flex;align-items:baseline;gap:8px;padding:4px 8px 8px;border-bottom:1px solid var(--line)}
+.brand b{font-family:var(--font-serif);font-size:20px;font-weight:600;letter-spacing:-.01em}
+.nav{display:flex;flex-direction:column;gap:1px}
+.nav label,.nav a{display:flex;align-items:center;gap:9px;height:30px;padding:0 8px;border-radius:var(--r-md);color:var(--ink-2);font-size:13px;cursor:pointer}
+.nav label:hover,.nav a:hover{background:var(--sunken);color:var(--ink);text-decoration:none}
+.nav .count{margin-left:auto;font-size:11px}
+.nav .k{margin-left:auto;opacity:.7}
+.side h3{padding:0 8px 4px}
+.side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:8px}
+.main{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;height:48px;padding:0 20px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.search{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);color:var(--ink-3);font-size:13px;cursor:pointer}
+.search .kbd{margin-left:auto}
+.chrono{margin-left:auto;display:flex;align-items:center;gap:9px;height:30px;padding:0 4px 0 10px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--surface)}
+.chrono .t{font-size:13px;font-weight:600}
+.chrono .what{font-size:12px;color:var(--ink-2);max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stop{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border:0;border-radius:var(--r-sm);background:var(--ink);color:var(--bg);cursor:pointer}
+.stop svg{width:10px;height:10px;fill:currentColor;stroke:none}
+.page{padding:22px 20px 60px;max-width:1240px;width:100%}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.grid{display:grid;gap:14px}
+.g-2-1{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-1-1{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;align-items:center;gap:8px;min-width:0}
+.sp{margin-left:auto}
+.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.late{color:var(--late)}.warn{color:var(--warn)}.ok{color:var(--ok)}.dim{color:var(--ink-3)}.ink2{color:var(--ink-2)}
+.list>li{display:flex;align-items:baseline;gap:9px;padding:7px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.list>li:last-child{border-bottom:0}
+.list .when{flex:none;width:62px;font-size:12px}
+.chk{flex:none;width:14px;height:14px;border:1.5px solid var(--line-strong);border-radius:3px;align-self:flex-start;margin-top:3px;background:var(--surface)}
+.arow .chk,.pal-item .chk{margin-top:0;align-self:center}
+.chk.run{border-color:var(--accent);background:linear-gradient(90deg,var(--accent) 50%,transparent 50%)}
+.chk.wait{border-style:dashed}
+
+/* Sélecteur de vue de la maquette (radios, sans JS) */
+.view{display:none}
+#v-dash:checked~.app .view-dash,#v-mission:checked~.app .view-mission,#v-actions:checked~.app .view-actions,#v-palette:checked~.app .view-palette{display:block}
+#v-dash:checked~.app label[for=v-dash],#v-mission:checked~.app label[for=v-mission],#v-actions:checked~.app .nav label[for=v-actions]{background:var(--sunken);color:var(--ink);font-weight:600}
+
+/* Semaine */
+.week{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.day{padding:10px 12px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;min-width:0}
+.day:last-child{border-right:0}
+.day .bar{height:86px;display:flex;flex-direction:column-reverse;gap:2px;border-bottom:1px solid var(--line-strong)}
+.day .bar i{display:block;border-radius:2px 2px 0 0;background:var(--mc)}
+.day.today{background:color-mix(in srgb,var(--accent-soft) 55%,transparent)}
+.day.miss .bar{border:1px dashed var(--late);border-radius:var(--r-sm);align-items:center;justify-content:center;flex-direction:row;color:var(--late);font-size:12px}
+.day.off .bar{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--sunken) 6px 7px)}
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-size:34px;line-height:1.05;font-weight:500}
+.kpi .v small{font-size:16px;color:var(--ink-3)}
+
+/* Mission */
+.fil{border:1px solid var(--line-strong);border-radius:var(--r-lg);background:var(--surface);overflow:hidden}
+.fil-head{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line-strong);background:var(--sunken)}
+.fil-head b{font-family:var(--font-serif);font-size:16px}
+.fil-cols{display:grid;grid-template-columns:1.15fr 1fr 1.15fr}
+.fil-cols>section{padding:12px 14px;border-right:1px solid var(--line);min-width:0}
+.fil-cols>section:last-child{border-right:0}
+.fil ul.t li{display:flex;gap:8px;padding:4px 0;font-size:13px;align-items:baseline}
+.fil ul.t .when{flex:none;width:48px;font-size:12px;color:var(--ink-3)}
+.dec li{position:relative;padding:3px 0 3px 16px;font-size:13px}
+.dec li::before{content:"→";position:absolute;left:0;color:var(--accent)}
+.split{display:flex;height:10px;border-radius:2px;overflow:hidden;gap:2px}
+.split i{display:block;background:var(--mc)}
+.budget{display:grid;grid-template-columns:repeat(4,auto) 1fr;gap:6px 26px;align-items:end}
+.budget .v{font-size:20px;font-weight:500}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line-strong);margin:22px 0 14px}
+.tabs a{padding:7px 10px;font-size:13px;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
+
+/* Actions */
+.filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px;border:1px solid var(--line-strong);border-radius:13px;font-size:12px;color:var(--ink-2);background:var(--surface)}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:var(--r-md);overflow:hidden}
+.seg span{padding:4px 10px;font-size:12px;color:var(--ink-2)}
+.seg span.on{background:var(--ink);color:var(--bg)}
+.grp{display:flex;align-items:baseline;gap:8px;padding:16px 2px 6px;border-bottom:1px solid var(--line-strong)}
+.grp b{font-family:var(--font-serif);font-size:16px}
+.arow{display:grid;grid-template-columns:14px minmax(0,1fr) 190px 150px 78px 86px;gap:12px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.arow:hover{background:color-mix(in srgb,var(--sunken) 60%,transparent)}
+.arow.sel{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kan>div{background:var(--sunken);border-radius:var(--r-lg);padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kcard{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--mc);border-radius:var(--r-md);padding:7px 9px;font-size:12.5px}
+
+/* Palette */
+.scrim{background:var(--overlay);border-radius:var(--r-lg);padding:44px 20px 60px;display:grid;grid-template-columns:repeat(2,minmax(0,560px));gap:28px;justify-content:center;align-items:start}
+.pal{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-xl);box-shadow:var(--shadow-pop);overflow:hidden;min-width:0}
+.pal-in{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);font-size:16px}
+.pal-in .caret{display:inline-block;width:1.5px;height:19px;background:var(--accent);margin-left:1px;vertical-align:-3px}
+.pal h4{margin:0;padding:10px 16px 4px;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.pal-item{display:flex;align-items:center;gap:10px;padding:7px 16px;font-size:13px}
+.pal-item.on{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.pal-item .sp{display:flex;gap:4px;align-items:center}
+.pal-foot{display:flex;gap:14px;flex-wrap:wrap;padding:9px 16px;border-top:1px solid var(--line);background:var(--sunken);font-size:12px;color:var(--ink-2)}
+.parsed{display:grid;grid-template-columns:86px 1fr;gap:7px 12px;padding:14px 16px;font-size:13px;align-items:center}
+.parsed dt{color:var(--ink-3);font-size:12px}.parsed dd{margin:0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
+.cap{color:#fff;font-size:12px;opacity:.85;margin-bottom:8px}
+.tabbar{display:none}
+
+/* ===== Intermédiaire (petit portable, fenêtre partagée) ===== */
+@media (max-width:1180px){
+ .g-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .g-2-1,.g-1-1{grid-template-columns:1fr}
+ .arow{grid-template-columns:14px minmax(0,1fr) 170px 78px 86px}
+ .arow>.c-o{display:none}
+ .scrim{grid-template-columns:minmax(0,560px)}
+}
+/* ===== Mobile ===== */
+@media (max-width:860px){
+ .app{grid-template-columns:1fr}
+ .side{display:none}
+ .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--surface);border-top:1px solid var(--line-strong);padding-bottom:env(safe-area-inset-bottom)}
+ .tabbar label{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;font-size:10.5px;color:var(--ink-2)}
+ .tabbar label.plus span{display:flex;align-items:center;justify-content:center;width:38px;height:38px;margin-top:-18px;border-radius:50%;background:var(--ink);color:var(--bg)}
+ .top{padding:0 12px}.search span.txt,.top .btn-primary,.chrono .what{display:none}
+ .search{flex:none;width:34px;justify-content:center;padding:0}.search .kbd{display:none}
+ .page{padding:16px 12px 90px}
+ .g-2-1,.g-3,.g-1-1,.fil-cols,.scrim,.kan{grid-template-columns:1fr}
+ .fil-cols>section{border-right:0;border-bottom:1px solid var(--line)}
+ .budget{grid-template-columns:1fr 1fr}
+ .budget>.bm{grid-column:1/-1}
+ .arow{grid-template-columns:14px minmax(0,1fr) auto;row-gap:2px}
+ .arow>.c-m,.arow>.c-o{display:none}
+ .arow>.c-s{grid-column:2/4;justify-self:start}
+ .scrim{padding:16px 10px}
+ .tw{overflow-x:auto}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+ <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+ <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.9c1.6.9 2.7 2.6 3 5.1"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+ <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-3.5-2-3.5 2-3.5-2L5 21zM9 8h6M9 12h6"/></symbol>
+ <symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M10 21v-4h4v4"/></symbol>
+ <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.5-4.5"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+ <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/></symbol>
+ <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3 7 7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></symbol>
+</svg>
+
+<input class="sr" type="radio" name="v" id="v-dash" checked>
+<input class="sr" type="radio" name="v" id="v-mission">
+<input class="sr" type="radio" name="v" id="v-actions">
+<input class="sr" type="radio" name="v" id="v-palette">
+
+<div class="app">
+<!-- ================= BARRE LATÉRALE ================= -->
+<aside class="side">
+ <div class="brand"><b>Le Fil</b><span class="meta">sem. 46</span></div>
+ <nav class="nav" aria-label="Navigation principale">
+  <label for="v-dash"><svg class="i"><use href="#i-home"/></svg>Tableau de bord<span class="k kbd">g t</span></label>
+  <a href="#"><svg class="i"><use href="#i-clock"/></svg>Feuille de temps<span class="k kbd">g h</span></a>
+  <a href="#"><svg class="i"><use href="#i-users"/></svg>Réunions<span class="k kbd">g r</span></a>
+  <label for="v-actions"><svg class="i"><use href="#i-check"/></svg>Actions<span class="count badge badge-late">2</span></label>
+  <a href="#"><svg class="i"><use href="#i-receipt"/></svg>Facturation<span class="k kbd">g f</span></a>
+  <a href="#"><svg class="i"><use href="#i-building"/></svg>Clients &amp; contacts</a>
+ </nav>
+ <div>
+  <h3 class="title-block">Missions en cours</h3>
+  <nav class="nav">
+   <label for="v-mission"><span class="dot" style="--mc:var(--m2)"></span><span class="trunc">TOBAM — IA &amp; outils</span><span class="k kbd">1</span></label>
+   <a href="#"><span class="dot" style="--mc:var(--m4)"></span><span class="trunc">Atelier Morel — Site</span><span class="k kbd">2</span></a>
+  </nav>
+  <h3 class="title-block" style="margin-top:12px">Prospects</h3>
+  <nav class="nav">
+   <a href="#"><span class="dot" style="--mc:var(--m5);opacity:.55"></span><span class="trunc">Kéolia — Audit data</span></a>
+   <a href="#" class="dim"><svg class="i"><use href="#i-plus"/></svg>Nouvelle mission</a>
+  </nav>
+ </div>
+ <div class="side-foot nav">
+  <a href="#"><svg class="i"><use href="#i-cog"/></svg>Réglages</a>
+  <a href="#" id="theme-toggle"><svg class="i"><use href="#i-sun"/></svg>Thème clair / sombre</a>
+ </div>
+</aside>
+
+<div class="main">
+<!-- ================= BARRE DU HAUT ================= -->
+<header class="top">
+ <label class="search" for="v-palette"><svg class="i"><use href="#i-search"/></svg><span class="txt">Rechercher ou lancer une commande…</span><span class="kbd">Ctrl K</span></label>
+ <label class="btn btn-primary" for="v-palette"><svg class="i"><use href="#i-plus"/></svg>Saisir du temps <span class="kbd" style="background:transparent;color:inherit;border-color:currentColor;opacity:.7">T</span></label>
+ <div class="chrono" title="Chrono en cours — S pour arrêter">
+  <span class="pulse"></span><span class="t num">02:10:42</span>
+  <span class="what"><span class="dot" style="--mc:var(--m2)"></span> TOBAM · Chatbot RLM</span>
+  <button class="stop" aria-label="Arrêter le chrono"><svg viewBox="0 0 10 10"><rect width="10" height="10" rx="1.5"/></svg></button>
+ </div>
+</header>
+
+<!-- ================= 1. TABLEAU DE BORD ================= -->
+<main class="page view view-dash">
+ <div class="page-head">
+  <div><p class="meta">Semaine 46 · 9 – 13 novembre 2026</p><h1 class="title-page">Jeudi 12 novembre</h1></div>
+  <p class="ink2" style="font-size:13px">2 actions en retard · 1 jour sans saisie · <span class="num">5 757 €</span> à facturer</p>
+ </div>
+
+ <div class="grid g-2-1">
+  <section class="card">
+   <div class="card-head"><h2 class="title-block">Cette semaine</h2>
+    <span class="meta"><span class="num">9 h 25</span> saisies + <span class="num">2 h 10</span> au chrono · objectif <span class="num">28 h</span> (4 j ouvrés)</span></div>
+   <div class="week">
+    <div class="day"><span class="meta">lun. 9</span><div class="bar"><i style="--mc:var(--m2);height:59px"></i><i style="--mc:var(--m4);height:19px"></i></div><b class="num">7 h 15</b></div>
+    <div class="day miss"><span class="meta late">mar. 10</span><div class="bar">Rien saisi</div><a class="num late" href="#">+ Saisir</a></div>
+    <div class="day off"><span class="meta">mer. 11 · férié</span><div class="bar"></div><span class="num dim">—</span></div>
+    <div class="day today"><span class="meta" style="color:var(--accent);font-weight:600">jeu. 12 · auj.</span><div class="bar"><i style="--mc:var(--m2);height:23px"></i><i style="--mc:var(--m2);height:23px;opacity:.45" title="Chrono en cours"></i></div><b class="num">2 h 10 <span class="dim" style="font-weight:400">+ chrono</span></b></div>
+    <div class="day"><span class="meta">ven. 13</span><div class="bar"></div><span class="num dim">—</span></div>
+   </div>
+  </section>
+
+  <section class="card">
+   <div class="card-head"><h2 class="title-block">À facturer</h2><a class="btn btn-sm" href="#">Préparer la facture</a></div>
+   <div class="card-body stack" style="gap:12px">
+    <div class="kpi"><span class="v num">5 757 <small>€ HT</small></span><span class="meta"><span class="num">62 h 00</span> non facturées · soit <span class="num">8,86 j</span></span></div>
+    <ul style="font-size:13px">
+     <li class="row" style="padding:3px 0"><span class="dot" style="--mc:var(--m2)"></span>TOBAM<span class="sp num">62 h 00 · 5 757 €</span></li>
+     <li class="row" style="padding:3px 0"><span class="dot" style="--mc:var(--m4)"></span>Atelier Morel<span class="sp dim">forfait · solde 2 400 € à la livraison</span></li>
+    </ul>
+    <div><div class="row meta" style="margin-bottom:4px">CA encaissé 2026<span class="sp num">58 240 € / 77 700 €</span></div>
+     <div class="meter"><span style="width:75%"></span></div>
+     <p class="meta" style="margin-top:4px">75 % du plafond micro · 1 facture envoyée en attente (<span class="num">4 550 €</span>, J+18)</p></div>
+   </div>
+  </section>
+ </div>
+
+ <div class="grid g-3" style="margin-top:14px">
+  <section class="card">
+   <div class="card-head"><h2 class="title-block">Actions &amp; échéances</h2><label for="v-actions" class="meta" style="cursor:pointer">Tout voir →</label></div>
+   <ul class="list">
+    <li><span class="chk"></span><span class="when num late">J+3</span><span><span class="dot" style="--mc:var(--m2)"></span> Envoyer à Axel le chiffrage de la phase 2 Pipeline Pilot</span></li>
+    <li><span class="chk wait"></span><span class="when num late">J+1</span><span><span class="dot" style="--mc:var(--m2)"></span> Relancer la DSI : accès VPN perdu <span class="badge badge-outline">attend client</span></span></li>
+    <li><span class="chk run"></span><span class="when num warn">demain</span><span><span class="dot" style="--mc:var(--m2)"></span> Livrer la v2 du prompt système Chatbot RLM</span></li>
+    <li><span class="chk"></span><span class="when num">lun. 16</span><span><span class="dot" style="--mc:var(--m4)"></span> Intégrer les textes de la page « Réalisations »</span></li>
+    <li><span class="chk"></span><span class="when num">mer. 18</span><span><span class="dot" style="--mc:var(--m5)"></span> Envoyer la proposition à Kéolia</span></li>
+   </ul>
+  </section>
+
+  <section class="card">
+   <div class="card-head"><h2 class="title-block">Dernières réunions</h2><a href="#" class="meta">+ Réunion <span class="kbd">R</span></a></div>
+   <ul class="list">
+    <li><span class="when num dim">lun. 9</span><span><a href="#"><b>Point hebdo TOBAM</b></a><br><span class="meta">Axel, Inès · 3 décisions · 2 actions créées</span></span></li>
+    <li><span class="when num dim">jeu. 5</span><span><a href="#"><b>Atelier Pipeline Pilot — cadrage phase 2</b></a><br><span class="meta">Axel, Mathieu (DSI) · 2 décisions · 4 actions</span></span></li>
+    <li><span class="when num dim">mar. 3</span><span><a href="#"><b>Recette maquettes — Atelier Morel</b></a><br><span class="meta">Claire Morel · compte rendu <span class="warn">à rédiger</span></span></span></li>
+    <li><span class="when num dim">28 oct.</span><span><a href="#"><b>Premier échange Kéolia</b></a><br><span class="meta">S. Lambert · 1 action</span></span></li>
+   </ul>
+  </section>
+
+  <section class="card">
+   <div class="card-head"><h2 class="title-block">Heures par mission</h2><span class="seg"><span>Sem.</span><span class="on">Mois</span></span></div>
+   <table class="table-dense">
+    <thead><tr><th>Novembre</th><th class="num">Heures</th><th class="num">Jours</th></tr></thead>
+    <tbody>
+     <tr><td><label for="v-mission" style="cursor:pointer"><span class="dot" style="--mc:var(--m2)"></span> TOBAM — IA &amp; outils</label><div class="meter" style="margin-top:5px;height:4px;--mc:var(--m2)"><span style="width:81%"></span></div></td><td class="num">41 h 30</td><td class="num">5,93</td></tr>
+     <tr><td><span class="dot" style="--mc:var(--m4)"></span> Atelier Morel — Site<div class="meter" style="margin-top:5px;height:4px;--mc:var(--m4)"><span style="width:19%"></span></div></td><td class="num">9 h 45</td><td class="num">1,39</td></tr>
+     <tr><td><span class="dot" style="--mc:var(--m5)"></span> Kéolia <span class="meta">(non facturable)</span></td><td class="num dim">1 h 30</td><td class="num dim">0,21</td></tr>
+    </tbody>
+    <tfoot><tr><td>Total</td><td class="num">52 h 45</td><td class="num">7,54</td></tr></tfoot>
+   </table>
+  </section>
+ </div>
+</main>
+
+<!-- ================= 2. PAGE MISSION ================= -->
+<main class="page view view-mission">
+ <div class="page-head">
+  <div>
+   <p class="meta"><a href="#">TOBAM</a> · contact principal <a href="#">Axel Rivière</a> · depuis le 1<sup>er</sup> sept. 2026 → 31 janv. 2027</p>
+   <h1 class="title-page"><span class="dot" style="--mc:var(--m2);width:12px;height:12px;border-radius:3px;margin-right:6px"></span>Accompagnement IA &amp; outils internes</h1>
+   <div class="row" style="margin-top:8px;flex-wrap:wrap"><span class="badge badge-ok">En cours</span><span class="badge badge-outline">Au temps · TJM 650 €</span><span class="badge badge-outline">1 j = 7 h</span></div>
+  </div>
+  <div class="row"><a class="btn" href="#"><svg class="i"><use href="#i-play"/></svg>Chrono</a><a class="btn" href="#"><svg class="i"><use href="#i-users"/></svg>Réunion</a><label for="v-palette" class="btn btn-primary"><svg class="i"><use href="#i-plus"/></svg>Temps</label></div>
+ </div>
+
+ <section class="card" style="margin-bottom:14px"><div class="card-body budget" style="--mc:var(--m2)">
+  <div><p class="title-block">Consommé</p><p class="v num">187 h 30 <span class="meta">26,8 j</span></p></div>
+  <div><p class="title-block">Restant</p><p class="v num">92 h 30 <span class="meta">13,2 j</span></p></div>
+  <div><p class="title-block">Non facturé</p><p class="v num">5 757 €</p></div>
+  <div><p class="title-block">Rythme</p><p class="v num">2,6 <span class="meta">j / sem. → budget épuisé vers le 15 déc.</span></p></div>
+  <div class="bm"><div class="row meta" style="margin-bottom:4px">Budget 40 j (280 h)<span class="sp num warn">67 % consommé · 49 % du calendrier écoulé</span></div>
+   <div class="meter" style="height:10px"><span style="width:67%"></span><i style="position:absolute;left:49%;top:0;bottom:0;width:2px;background:var(--ink)" title="Position attendue à date"></i></div></div>
+ </div></section>
+
+ <section class="fil" aria-label="Reprendre le fil">
+  <div class="fil-head"><b>Reprendre le fil</b><span class="meta">dernière activité il y a 2 h · dernier échange avec le client lundi</span><a class="sp btn btn-sm btn-ghost" href="#">Copier le résumé</a></div>
+  <div class="fil-cols">
+   <section>
+    <div class="row" style="margin-bottom:6px"><h3 class="title-block">Dernière réunion</h3><span class="sp meta num">lun. 9 nov.</span></div>
+    <p style="font-weight:600"><a href="#">Point hebdo TOBAM</a> <span class="meta" style="font-weight:400">· Axel, Inès</span></p>
+    <ul class="dec" style="margin-top:6px">
+     <li>Le Chatbot RLM passe en pilote auprès de 5 commerciaux dès le 23 nov.</li>
+     <li>Pipeline Pilot : on garde l'orchestration existante, pas de migration.</li>
+     <li>Outils Biz Dev gelé jusqu'en janvier (priorité RLM).</li>
+    </ul>
+    <p class="meta" style="margin-top:8px">Prochaine : <b class="ink2">lun. 16 nov. 10 h</b> · ordre du jour à préparer</p>
+   </section>
+   <section>
+    <div class="row" style="margin-bottom:6px"><h3 class="title-block">Journal</h3><a class="sp meta" href="#">Tout →</a></div>
+    <ul class="t">
+     <li><span class="when num">auj.</span><span>Jeu de test RLM : 41/50 réponses jugées correctes</span></li>
+     <li><span class="when num">lun.</span><span class="late">Accès VPN perdu — ticket DSI n° 4471</span></li>
+     <li><span class="when num">6 nov.</span><span>Livré la v1 du Chatbot RLM en recette</span></li>
+     <li><span class="when num">4 nov.</span><span>Reçu l'export CRM d'Inès (12 400 lignes)</span></li>
+    </ul>
+    <input class="input-line" style="margin-top:6px" placeholder="Ajouter une ligne au journal…  (J)">
+   </section>
+   <section>
+    <div class="row" style="margin-bottom:6px"><h3 class="title-block">Actions ouvertes · 5</h3><span class="sp badge badge-late">2 en retard</span></div>
+    <ul class="t">
+     <li><span class="chk"></span><span class="when num late">J+3</span><span>Envoyer à Axel le chiffrage phase 2 Pipeline Pilot</span></li>
+     <li><span class="chk wait"></span><span class="when num late">J+1</span><span>Rétablir l'accès VPN <span class="badge badge-outline">Axel</span></span></li>
+     <li><span class="chk run"></span><span class="when num warn">dem.</span><span>Livrer la v2 du prompt système RLM</span></li>
+     <li><span class="chk"></span><span class="when num">20 nov.</span><span>Préparer la formation des 5 pilotes</span></li>
+     <li><span class="chk wait"></span><span class="when num">—</span><span>Fournir 30 questions réelles de commerciaux <span class="badge badge-outline">Inès</span></span></li>
+    </ul>
+    <input class="input-line" style="margin-top:6px" placeholder="Nouvelle action…  (A)">
+   </section>
+  </div>
+ </section>
+
+ <nav class="tabs"><a class="on" href="#">Chantiers &amp; heures</a><a href="#">Réunions · 9</a><a href="#">Journal · 34</a><a href="#">Actions · 5</a><a href="#">Factures · 2</a><a href="#">Infos</a></nav>
+
+ <div class="grid g-1-1">
+  <section class="card">
+   <div class="card-head"><h2 class="title-block">Chantiers</h2><a class="meta" href="#">+ Chantier</a></div>
+   <div class="card-body" style="padding-bottom:4px"><div class="split"><i style="--mc:var(--m2);width:51.3%"></i><i style="--mc:var(--m2);opacity:.6;width:31.3%"></i><i style="--mc:var(--m2);opacity:.3;width:17.4%"></i></div></div>
+   <div class="tw"><table class="table-dense">
+    <thead><tr><th>Chantier</th><th class="num">Ce mois</th><th class="num">Total</th><th class="num">Part</th><th>Dernière saisie</th></tr></thead>
+    <tbody>
+     <tr><td><span class="dot" style="--mc:var(--m2)"></span> Chatbot RLM</td><td class="num">29 h 15</td><td class="num">96 h 15</td><td class="num">51 %</td><td class="meta">aujourd'hui</td></tr>
+     <tr><td><span class="dot" style="--mc:var(--m2);opacity:.6"></span> Pipeline Pilot</td><td class="num">10 h 45</td><td class="num">58 h 45</td><td class="num">31 %</td><td class="meta">jeu. 5 nov.</td></tr>
+     <tr><td><span class="dot" style="--mc:var(--m2);opacity:.3"></span> Outils Biz Dev <span class="badge">gelé</span></td><td class="num">1 h 30</td><td class="num">32 h 30</td><td class="num">17 %</td><td class="meta">mar. 3 nov.</td></tr>
+    </tbody>
+    <tfoot><tr><td>Total</td><td class="num">41 h 30</td><td class="num">187 h 30</td><td class="num">100 %</td><td></td></tr></tfoot>
+   </table></div>
+  </section>
+
+  <section class="card">
+   <div class="card-head"><h2 class="title-block">Heures récentes</h2><span class="meta"><a href="#">Feuille de temps →</a></span></div>
+   <div class="tw"><table class="table-dense">
+    <thead><tr><th>Date</th><th>Chantier</th><th>Description</th><th class="num">Durée</th><th>État</th></tr></thead>
+    <tbody>
+     <tr><td class="num">12/11</td><td>Chatbot RLM</td><td>Évaluation jeu de test, itération prompt</td><td class="num">2 h 10</td><td><span class="badge badge-accent">chrono</span></td></tr>
+     <tr><td class="num">09/11</td><td>Chatbot RLM</td><td>Correctifs recette + point hebdo</td><td class="num">4 h 00</td><td><span class="badge badge-warn">à facturer</span></td></tr>
+     <tr><td class="num">09/11</td><td>Pipeline Pilot</td><td>Chiffrage phase 2</td><td class="num">1 h 30</td><td><span class="badge badge-warn">à facturer</span></td></tr>
+     <tr><td class="num">06/11</td><td>Chatbot RLM</td><td>Mise en recette v1, doc d'utilisation</td><td class="num">6 h 30</td><td><span class="badge badge-warn">à facturer</span></td></tr>
+     <tr><td class="num">05/11</td><td>Pipeline Pilot</td><td>Atelier de cadrage phase 2</td><td class="num">3 h 00</td><td><span class="badge badge-warn">à facturer</span></td></tr>
+     <tr><td class="num">30/10</td><td>Chatbot RLM</td><td>Indexation de la base documentaire</td><td class="num">7 h 00</td><td><span class="badge">facturé</span></td></tr>
+     <tr><td class="num">29/10</td><td>Outils Biz Dev</td><td>Script d'enrichissement des leads</td><td class="num">5 h 15</td><td><span class="badge badge-ok">payé</span></td></tr>
+    </tbody>
+   </table></div>
+  </section>
+ </div>
+</main>
+
+<!-- ================= 6. ACTIONS ================= -->
+<main class="page view view-actions">
+ <div class="page-head">
+  <div><p class="meta">9 ouvertes à moi · 3 en attente du client</p><h1 class="title-page">Actions</h1></div>
+  <span class="seg"><span class="on">Liste</span><span>Kanban <span class="kbd" style="margin-left:4px">V</span></span></span>
+ </div>
+ <div class="filters">
+  <span class="fchip on">À moi</span><span class="fchip on">Ouvertes</span><span class="fchip">Au client</span><span class="fchip">Faites</span>
+  <span style="width:1px;height:18px;background:var(--line-strong);margin:0 4px"></span>
+  <span class="fchip">Mission : toutes ▾</span><span class="fchip">Issues d'une réunion</span>
+  <span class="sp meta">Filtre par défaut · <a href="#">réinitialiser</a></span>
+ </div>
+ <input class="input-line" placeholder="Nouvelle action…  ex. « relancer Axel devis vendredi @tobam »   (A)">
+
+ <div class="grp"><b class="late">En retard</b><span class="meta num">2</span></div>
+ <div class="arow sel"><span class="chk"></span><span>Envoyer à Axel le chiffrage de la phase 2 Pipeline Pilot</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m2)"><span class="dot"></span>TOBAM · Pipeline Pilot</span></span><span class="c-o meta trunc">↳ Atelier cadrage, 5 nov.</span><span class="num late">lun. 9 · J+3</span><span class="c-s"><span class="badge">à faire</span></span></div>
+ <div class="arow"><span class="chk run"></span><span>Rédiger le compte rendu de la recette maquettes</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m4)"><span class="dot"></span>Atelier Morel</span></span><span class="c-o meta trunc">↳ Recette maquettes, 3 nov.</span><span class="num late">mar. 10 · J+2</span><span class="c-s"><span class="badge badge-accent">en cours</span></span></div>
+
+ <div class="grp"><b>Cette semaine</b><span class="meta num">3</span></div>
+ <div class="arow"><span class="chk run"></span><span>Livrer la v2 du prompt système Chatbot RLM</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m2)"><span class="dot"></span>TOBAM · Chatbot RLM</span></span><span class="c-o meta trunc">↳ Point hebdo, 9 nov.</span><span class="num warn">demain</span><span class="c-s"><span class="badge badge-accent">en cours</span></span></div>
+ <div class="arow"><span class="chk"></span><span>Préparer l'ordre du jour du point hebdo du 16</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m2)"><span class="dot"></span>TOBAM</span></span><span class="c-o meta">—</span><span class="num">ven. 13</span><span class="c-s"><span class="badge">à faire</span></span></div>
+ <div class="arow"><span class="chk"></span><span>Envoyer la facture d'octobre à TOBAM</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m2)"><span class="dot"></span>TOBAM</span></span><span class="c-o meta">—</span><span class="num">ven. 13</span><span class="c-s"><span class="badge">à faire</span></span></div>
+
+ <div class="grp"><b>Plus tard</b><span class="meta num">4</span></div>
+ <div class="arow"><span class="chk"></span><span>Intégrer les textes de la page « Réalisations »</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m4)"><span class="dot"></span>Atelier Morel</span></span><span class="c-o meta trunc">↳ Recette maquettes, 3 nov.</span><span class="num">lun. 16</span><span class="c-s"><span class="badge">à faire</span></span></div>
+ <div class="arow"><span class="chk"></span><span>Envoyer la proposition commerciale</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m5)"><span class="dot"></span>Kéolia</span></span><span class="c-o meta trunc">↳ Premier échange, 28 oct.</span><span class="num">mer. 18</span><span class="c-s"><span class="badge">à faire</span></span></div>
+ <div class="arow"><span class="chk"></span><span>Préparer la formation des 5 commerciaux pilotes</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m2)"><span class="dot"></span>TOBAM · Chatbot RLM</span></span><span class="c-o meta trunc">↳ Point hebdo, 9 nov.</span><span class="num">ven. 20</span><span class="c-s"><span class="badge">à faire</span></span></div>
+ <div class="arow"><span class="chk wait"></span><span>Reprendre Outils Biz Dev après le gel</span><span class="c-m"><span class="chip-mission" style="--mc:var(--m2)"><span class="dot"></span>TOBAM · Outils Biz Dev</span></span><span class="c-o meta trunc">↳ Point hebdo, 9 nov.</span><span class="num dim">janv.</span><span class="c-s"><span class="badge badge-outline">en attente</span></span></div>
+
+ <p class="meta" style="margin:10px 2px 26px"><span class="kbd">↑</span> <span class="kbd">↓</span> naviguer · <span class="kbd">X</span> fait · <span class="kbd">E</span> modifier · <span class="kbd">D</span> échéance · <span class="kbd">S</span> statut · <span class="kbd">Entrée</span> ouvrir</p>
+
+ <h2 class="title-block" style="margin-bottom:8px">Bascule kanban (mêmes filtres)</h2>
+ <div class="kan">
+  <div><p class="title-block">À faire · 6</p><div class="kcard" style="--mc:var(--m2)">Chiffrage phase 2 Pipeline Pilot<br><span class="num late">J+3</span></div><div class="kcard" style="--mc:var(--m2)">Ordre du jour du 16<br><span class="num dim">ven. 13</span></div><div class="kcard" style="--mc:var(--m5)">Proposition Kéolia<br><span class="num dim">mer. 18</span></div></div>
+  <div><p class="title-block">En cours · 2</p><div class="kcard" style="--mc:var(--m4)">Compte rendu recette maquettes<br><span class="num late">J+2</span></div><div class="kcard" style="--mc:var(--m2)">v2 prompt système RLM<br><span class="num warn">demain</span></div></div>
+  <div><p class="title-block">En attente · 1</p><div class="kcard" style="--mc:var(--m2)">Reprendre Outils Biz Dev<br><span class="num dim">janv.</span></div></div>
+  <div><p class="title-block">Fait (7 derniers jours) · 4</p><div class="kcard dim" style="--mc:var(--m2)"><s>Mettre la v1 RLM en recette</s><br><span class="num">6 nov.</span></div></div>
+ </div>
+</main>
+
+<!-- ================= 3 + 8. SAISIE RAPIDE & PALETTE ================= -->
+<main class="page view view-palette">
+ <div class="page-head"><div><p class="meta">Fenêtres modales, affichées au-dessus de n'importe quelle vue (ici côte à côte pour la maquette)</p><h1 class="title-page">Saisie rapide &amp; palette</h1></div></div>
+ <div class="scrim">
+  <div>
+   <p class="cap">Saisie rapide — touche T, ou « t » en tête de palette</p>
+   <div class="pal" role="dialog" aria-label="Saisir du temps">
+    <div class="pal-in"><svg class="i" style="color:var(--ink-3)"><use href="#i-clock"/></svg><span>tobam rlm 1h30 atelier prompts avec Axel<span class="caret"></span></span></div>
+    <dl class="parsed">
+     <dt>Mission</dt><dd><span class="chip-mission" style="--mc:var(--m2)"><span class="dot"></span>TOBAM — IA &amp; outils</span><span class="meta">« tobam »</span></dd>
+     <dt>Chantier</dt><dd><span class="badge badge-outline">Chatbot RLM</span><span class="meta">« rlm »</span></dd>
+     <dt>Durée</dt><dd><b class="num">1 h 30</b><span class="meta">accepte 1h30 · 1,5 · 90m · 0,25j</span></dd>
+     <dt>Date</dt><dd><span class="badge badge-outline">auj. jeu. 12 nov.</span><span class="meta">hier · lun · 10/11</span></dd>
+     <dt>Description</dt><dd>atelier prompts avec Axel</dd>
+     <dt>Facturable</dt><dd><span class="badge badge-ok">oui</span><span class="meta">« nf » pour non facturable</span></dd>
+    </dl>
+    <h4>Refaire une saisie récente</h4>
+    <div class="pal-item"><span class="dot" style="--mc:var(--m2)"></span>Chatbot RLM — correctifs recette<span class="sp num dim">4 h 00 <span class="kbd">Alt 1</span></span></div>
+    <div class="pal-item"><span class="dot" style="--mc:var(--m4)"></span>Atelier Morel — intégration<span class="sp num dim">1 h 45 <span class="kbd">Alt 2</span></span></div>
+    <div class="pal-foot"><span><span class="kbd">Entrée</span> enregistrer</span><span><span class="kbd">Ctrl Entrée</span> + nouvelle</span><span><span class="kbd">Tab</span> corriger un champ</span><span><span class="kbd">Échap</span></span></div>
+   </div>
+  </div>
+
+  <div>
+   <p class="cap">Palette de commandes + recherche globale — Ctrl K</p>
+   <div class="pal" role="dialog" aria-label="Palette de commandes">
+    <div class="pal-in"><svg class="i" style="color:var(--ink-3)"><use href="#i-search"/></svg><span>vpn<span class="caret"></span></span><span class="sp kbd">Échap</span></div>
+    <h4>Commandes</h4>
+    <div class="pal-item on"><svg class="i"><use href="#i-clock"/></svg>Saisir du temps…<span class="sp"><span class="kbd">T</span></span></div>
+    <div class="pal-item"><svg class="i"><use href="#i-play"/></svg>Arrêter le chrono (TOBAM · Chatbot RLM, 02:10)<span class="sp"><span class="kbd">S</span></span></div>
+    <div class="pal-item"><svg class="i"><use href="#i-pen"/></svg>Ajouter au journal : « vpn »<span class="sp"><span class="kbd">J</span></span></div>
+    <h4>Journal</h4>
+    <div class="pal-item"><span class="dot" style="--mc:var(--m2)"></span><span class="trunc">Accès <mark>VPN</mark> perdu — ticket DSI n° 4471</span><span class="sp meta">lun. 9 nov.</span></div>
+    <h4>Actions</h4>
+    <div class="pal-item"><span class="chk wait"></span><span class="trunc">Rétablir l'accès <mark>VPN</mark> · Axel</span><span class="sp"><span class="badge badge-late">J+1</span></span></div>
+    <h4>Réunions &amp; notes</h4>
+    <div class="pal-item"><svg class="i"><use href="#i-users"/></svg><span class="trunc">Atelier Pipeline Pilot — « …Mathieu ouvre le <mark>VPN</mark> prestataire d'ici… »</span><span class="sp meta">5 nov.</span></div>
+    <div class="pal-item"><svg class="i"><use href="#i-users"/></svg><span class="trunc">Kick-off TOBAM — « …accès <mark>VPN</mark> + dépôt Git… »</span><span class="sp meta">1 sept.</span></div>
+    <div class="pal-foot"><span><span class="kbd">↑</span> <span class="kbd">↓</span> naviguer</span><span><span class="kbd">Entrée</span> ouvrir</span><span>préfixes : <span class="kbd">&gt;</span> commandes · <span class="kbd">@</span> mission · <span class="kbd">#</span> actions · <span class="kbd">t</span> temps</span></div>
+   </div>
+  </div>
+ </div>
+</main>
+</div>
+</div>
+
+<!-- Barre d'onglets mobile -->
+<nav class="tabbar" aria-label="Navigation mobile">
+ <label for="v-dash"><svg class="i"><use href="#i-home"/></svg>Accueil</label>
+ <label for="v-mission"><svg class="i"><use href="#i-building"/></svg>Missions</label>
+ <label for="v-palette" class="plus"><span><svg class="i"><use href="#i-plus"/></svg></span>Temps</label>
+ <label for="v-actions"><svg class="i"><use href="#i-check"/></svg>Actions</label>
+ <label for="v-palette"><svg class="i"><use href="#i-search"/></svg>Chercher</label>
+</nav>
+
+<script>
+/* Facultatif : bascule de thème (sans JS, la maquette suit le thème du système). */
+document.getElementById('theme-toggle').addEventListener('click',function(e){
+  e.preventDefault();var r=document.documentElement;
+  var dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme=dark?'light':'dark';
+});
+</script>
+</body>
+</html>

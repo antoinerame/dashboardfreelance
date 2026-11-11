@@ -1,0 +1,319 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Design system « Registre »
+   Papier chaud, encre, filets fins. Titres en serif, chiffres en mono tabulaire.
+   Un seul accent (bleu encre). La couleur sert d'abord à identifier les missions
+   et à signaler les états (retard / attention / ok).
+   Les variables brutes (--bg, --ink…) sont définies sur :root et redéfinies
+   en sombre ; @theme inline les expose à Tailwind (bg-paper, text-ink, …).
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #f5f2ea;            /* papier (fond d'app) */
+  --surface: #fcfaf5;       /* feuille (cartes, panneaux) */
+  --sunken: #ece8dc;        /* creux (champs inactifs, pistes de jauge, survol) */
+  --overlay: rgb(29 27 22 / 0.42);
+
+  /* Filets */
+  --line: #dcd6c6;
+  --line-strong: #b8b19e;
+
+  /* Encre */
+  --ink: #1d1b16;
+  --ink-2: #565146;         /* texte secondaire */
+  --ink-3: #777162;         /* légendes, méta */
+
+  /* Accent (bleu encre) */
+  --accent: #2a3f9e;
+  --accent-hover: #213281;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2e6f6;
+
+  /* États */
+  --late: #b3261e;      --late-soft: #f7e0db;     /* retard, erreur */
+  --warn: #8a5a00;      --warn-soft: #f6e8c6;     /* attention */
+  --ok: #2c6a3d;        --ok-soft: #dcecd9;       /* ok, payé, fait */
+  --neutral: #666152;   --neutral-soft: #e8e4d8;  /* neutre, inactif */
+
+  /* Palette missions (8) */
+  --m1: #3552b8;  /* encre */
+  --m2: #0f766e;  /* sarcelle */
+  --m3: #a8640a;  /* ocre */
+  --m4: #b8482a;  /* terre cuite */
+  --m5: #7d3c98;  /* prune */
+  --m6: #5c7316;  /* olive */
+  --m7: #b0326b;  /* framboise */
+  --m8: #4d6478;  /* ardoise */
+
+  --shadow-pop-value: 0 1px 0 rgb(29 27 22 / 0.04), 0 18px 48px -12px rgb(29 27 22 / 0.28);
+  --shadow-raise-value: 0 1px 2px rgb(29 27 22 / 0.08);
+}
+
+/* Thème sombre : automatique (sauf si forcé clair) … */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #161512;
+    --surface: #1e1c18;
+    --sunken: #100f0d;
+    --overlay: rgb(0 0 0 / 0.6);
+    --line: #322f29;
+    --line-strong: #4c483e;
+    --ink: #ece7da;
+    --ink-2: #b5af9f;
+    --ink-3: #8f8979;
+    --accent: #a9b8ff;
+    --accent-hover: #c3ceff;
+    --accent-ink: #14183a;
+    --accent-soft: #252a49;
+    --late: #ff8a7a;     --late-soft: #3d1f1b;
+    --warn: #e9b949;     --warn-soft: #382c11;
+    --ok: #86c995;       --ok-soft: #1b3021;
+    --neutral: #a39d8d;  --neutral-soft: #2a2823;
+    --m1: #8fa6f5; --m2: #5cc4b8; --m3: #e0a84e; --m4: #f0906f;
+    --m5: #c796e0; --m6: #a9c45a; --m7: #ee8db6; --m8: #9db4c8;
+    --shadow-pop-value: 0 0 0 1px rgb(255 255 255 / 0.04), 0 24px 60px -12px rgb(0 0 0 / 0.7);
+    --shadow-raise-value: 0 1px 2px rgb(0 0 0 / 0.4);
+  }
+}
+
+/* … ou forcé */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161512;
+  --surface: #1e1c18;
+  --sunken: #100f0d;
+  --overlay: rgb(0 0 0 / 0.6);
+  --line: #322f29;
+  --line-strong: #4c483e;
+  --ink: #ece7da;
+  --ink-2: #b5af9f;
+  --ink-3: #8f8979;
+  --accent: #a9b8ff;
+  --accent-hover: #c3ceff;
+  --accent-ink: #14183a;
+  --accent-soft: #252a49;
+  --late: #ff8a7a;     --late-soft: #3d1f1b;
+  --warn: #e9b949;     --warn-soft: #382c11;
+  --ok: #86c995;       --ok-soft: #1b3021;
+  --neutral: #a39d8d;  --neutral-soft: #2a2823;
+  --m1: #8fa6f5; --m2: #5cc4b8; --m3: #e0a84e; --m4: #f0906f;
+  --m5: #c796e0; --m6: #a9c45a; --m7: #ee8db6; --m8: #9db4c8;
+  --shadow-pop-value: 0 0 0 1px rgb(255 255 255 / 0.04), 0 24px 60px -12px rgb(0 0 0 / 0.7);
+  --shadow-raise-value: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+/* Variante `dark:` de Tailwind alignée sur le même mécanisme (rarement utile :
+   les tokens basculent déjà tout seuls). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  /* Couleurs sémantiques → bg-paper, text-ink-2, border-line, bg-late-soft, text-m3… */
+  --color-paper: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-overlay: var(--overlay);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-late: var(--late);
+  --color-late-soft: var(--late-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-m1: var(--m1);
+  --color-m2: var(--m2);
+  --color-m3: var(--m3);
+  --color-m4: var(--m4);
+  --color-m5: var(--m5);
+  --color-m6: var(--m6);
+  --color-m7: var(--m7);
+  --color-m8: var(--m8);
+
+  --shadow-pop: var(--shadow-pop-value);
+  --shadow-raise: var(--shadow-raise-value);
+}
+
+@theme {
+  /* Typo : polices système uniquement (aucun chargement réseau) */
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+
+  /* Échelle dense (base 14 px) */
+  --text-2xs: 0.6875rem;   /* 11 — étiquettes capitales */
+  --text-xs: 0.75rem;      /* 12 — méta */
+  --text-sm: 0.8125rem;    /* 13 — tableaux */
+  --text-base: 0.875rem;   /* 14 — texte */
+  --text-lg: 1rem;         /* 16 — titres de bloc */
+  --text-xl: 1.25rem;      /* 20 — chiffres clés */
+  --text-2xl: 1.625rem;    /* 26 — titre de page (serif) */
+  --text-3xl: 2.125rem;    /* 34 — chiffre héro */
+
+  /* Rayons : peu arrondi, esprit registre */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;       /* palette de commandes */
+
+  /* Gabarits */
+  --spacing-sidebar: 224px;
+  --spacing-topbar: 48px;
+  --container-page: 1240px;
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-size: var(--text-base);
+    line-height: 1.45;
+    font-feature-settings: "kern", "liga";
+  }
+  ::selection { background: var(--accent-soft); color: var(--ink); }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: var(--radius-sm);
+  }
+  h1, h2, h3 { text-wrap: balance; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@layer components {
+  /* --- Typo ------------------------------------------------------------ */
+  .title-page { font-family: var(--font-serif); font-size: var(--text-2xl); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
+  .title-block { font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .meta { font-size: var(--text-xs); color: var(--ink-3); }
+
+  /* --- Boutons --------------------------------------------------------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 30px; padding: 0 10px;
+    border: 1px solid var(--line-strong); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--ink);
+    font-size: var(--text-sm); font-weight: 500; white-space: nowrap;
+    cursor: pointer; transition: background-color 0.12s, border-color 0.12s;
+  }
+  .btn:hover { background: var(--sunken); }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .btn-primary:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn-ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
+  .btn-ghost:hover { background: var(--sunken); color: var(--ink); }
+  .btn-danger { color: var(--late); border-color: color-mix(in srgb, var(--late) 45%, var(--line)); }
+  .btn-sm { height: 24px; padding: 0 7px; font-size: var(--text-xs); }
+  .btn-icon { width: 30px; padding: 0; }
+
+  /* --- Champs ---------------------------------------------------------- */
+  .input, .select, .textarea {
+    width: 100%; height: 30px; padding: 0 9px;
+    border: 1px solid var(--line-strong); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--ink);
+    font: inherit; font-size: var(--text-sm);
+  }
+  .textarea { height: auto; min-height: 96px; padding: 8px 9px; line-height: 1.5; resize: vertical; }
+  .textarea-notes { font-family: var(--font-mono); font-size: var(--text-sm); }
+  .input::placeholder, .textarea::placeholder { color: var(--ink-3); }
+  .input:focus, .select:focus, .textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+  .input[aria-invalid="true"] { border-color: var(--late); }
+  /* Ligne d'ajout rapide (journal, action) : un champ sans cadre, souligné */
+  .input-line {
+    width: 100%; height: 32px; padding: 0 2px;
+    border: 0; border-bottom: 1px dashed var(--line-strong);
+    background: transparent; color: var(--ink); font: inherit;
+  }
+  .input-line:focus { outline: none; border-bottom: 1px solid var(--accent); }
+  .label { display: block; margin-bottom: 4px; font-size: var(--text-xs); font-weight: 600; color: var(--ink-2); }
+  .field-error { margin-top: 4px; font-size: var(--text-xs); color: var(--late); }
+
+  /* --- Cartes / panneaux ---------------------------------------------- */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .card-body { padding: 12px 14px; }
+  .rule { border: 0; border-top: 1px solid var(--line); }
+
+  /* --- Badges ---------------------------------------------------------- */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 20px; padding: 0 7px; border-radius: var(--radius-sm);
+    background: var(--neutral-soft); color: var(--neutral);
+    font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+  }
+  .badge-late { background: var(--late-soft); color: var(--late); }
+  .badge-warn { background: var(--warn-soft); color: var(--warn); }
+  .badge-ok { background: var(--ok-soft); color: var(--ok); }
+  .badge-accent { background: var(--accent-soft); color: var(--accent); }
+  .badge-outline { background: transparent; border: 1px solid var(--line-strong); color: var(--ink-2); }
+
+  /* Pastille mission : poser --mc (ex. style="--mc: var(--m2)") */
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--mc, var(--neutral)); flex: none; }
+  .chip-mission {
+    display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 7px 0 6px;
+    border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 500; color: var(--ink);
+    background: color-mix(in srgb, var(--mc, var(--neutral)) 14%, transparent);
+  }
+
+  .kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 4px;
+    border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--ink-2);
+    font-family: var(--font-mono); font-size: 0.625rem; line-height: 1;
+  }
+
+  /* --- Jauge (budget, plafond) ---------------------------------------- */
+  .meter { position: relative; height: 8px; border-radius: var(--radius-xs); background: var(--sunken); overflow: hidden; }
+  .meter > span { display: block; height: 100%; background: var(--mc, var(--ink)); }
+  .meter-warn > span { background: var(--warn); }
+  .meter-late > span { background: var(--late); }
+
+  /* --- Tableau dense --------------------------------------------------- */
+  .table-dense { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  .table-dense th {
+    padding: 6px 10px; text-align: left; white-space: nowrap;
+    font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-3); border-bottom: 1px solid var(--line-strong);
+  }
+  .table-dense td { padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+  .table-dense tbody tr:hover { background: color-mix(in srgb, var(--sunken) 60%, transparent); }
+  .table-dense tr[aria-selected="true"] { background: var(--accent-soft); }
+  .table-dense .num, .table-dense th.num { text-align: right; }
+  .table-dense tfoot td { border-bottom: 0; border-top: 1px solid var(--line-strong); font-weight: 600; }
+
+  /* --- États ----------------------------------------------------------- */
+  .empty { padding: 20px 14px; color: var(--ink-3); font-size: var(--text-sm); }
+  .skeleton { border-radius: var(--radius-sm); background: var(--sunken); animation: skeleton-pulse 1.2s ease-in-out infinite; }
+  .banner-error { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--late) 40%, var(--line)); border-radius: var(--radius-md); background: var(--late-soft); color: var(--late); font-size: var(--text-sm); }
+  .toast { padding: 8px 12px; border-radius: var(--radius-md); background: var(--ink); color: var(--bg); font-size: var(--text-sm); box-shadow: var(--shadow-pop-value); }
+
+  /* Chrono actif : point qui bat */
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--late); animation: pulse-dot 1.6s ease-in-out infinite; }
+}
+
+@keyframes skeleton-pulse { 50% { opacity: 0.45; } }
+@keyframes pulse-dot { 50% { opacity: 0.35; } }
